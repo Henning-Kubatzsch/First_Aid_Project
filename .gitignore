@@ -210,4 +210,6 @@ __marimo__/
 /models
 
 # Local indexes, embeddings
-data/
+# ignore everything incide this folder
+data/*
+!data/.gitkeep
