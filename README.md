@@ -9,7 +9,7 @@ A pedagogical agent, powered by **RAG (Retrieval-Augmented Generation)** and **A
 
 ---
 
-## 🌍 Vision
+# 🌍 Vision
 
 1. **Local & Offline**
 
@@ -29,7 +29,7 @@ A pedagogical agent, powered by **RAG (Retrieval-Augmented Generation)** and **A
 
 ---
 
-## 🛣️ Development Phases (Roadmap)
+# 🛣️ Development Phases (Roadmap)
 
 **Phase 1 – Local RAG baseline (current)**
 
@@ -61,127 +61,244 @@ A pedagogical agent, powered by **RAG (Retrieval-Augmented Generation)** and **A
 
 ---
 
-## ⚙️ Getting Started
+# Setup Guide
 
-### Prerequisites
+## 1. Clone Project and Set Python Version
 
-* macOS on Apple Silicon (tested on M1 Pro)
-* Python 3.11+
-* [Poetry](https://python-poetry.org/)
-* Local LLM runtime (e.g., `llama-cpp-python`) and a compatible **GGUF** model
-* (Server) `uvicorn`, `fastapi`
-
-### Install
+1. Clone the project from your Git repository:    
 
 ```bash
-git clone <this-repo>
-cd <this-repo>
+git clone <your-repo-url>
+cd <project-folder>
+```
+
+2. Set the local Python version using **pyenv**:    
+
+```bash
+pyenv local 3.11.9
+```
+
+---
+
+## 2. Set Up Poetry Environment
+
+1. Configure Poetry to use the correct Python version:    
+
+```bash
+poetry env use 3.11.9
+```
+
+2. Install project dependencies:    
+
+```bash
 poetry install
 ```
 
-Place your (paraphrased) ERC-based summaries in the docs directory you plan to index (see **Create Index**).
+> Note: This will create a virtual environment in your project folder if your `poetry.toml` is configured with `[virtualenvs] in-project = true`.
 
 ---
 
-## 🧭 Navigate the Project
+## 3. Add First Aid Instruction Document
 
-### Create Index
-
-Build or rebuild the vector index:
+Copy your Resuscitation FAQ document(s) into the `data/docs` folder:
 
 ```bash
+mkdir -p data/docs   # create the folder if it doesn't exist
+cp path/to/your/Resuscitation_FAQ.txt data/docs/
+```
+
+> You can add multiple documents if needed.
+
+---
+
+## 4. Set Up Local LLM
+
+1. **Install Hugging Face Hub** (compatible version):    
+
+```bash
+poetry add huggingface_hub@^0.23.0
+```
+
+2. **Activate the Poetry virtual environment**:    
+
+```bash
+source .venv/bin/activate
+```
+
+3. **Go to the models directory**:    
+
+```bash
+mkdir -p models     # create the folder if it doesn't exist
+cd models
+```
+
+4. **Download the Qwen2.5 model** from [Hugging Face](https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF)
+
+> You may need a Hugging Face account and must log in via the terminal:
+
+```bash
+huggingface-cli login
+```
+
+Then download the model:
+
+```bash
+huggingface-cli download Qwen/Qwen2.5-3B-Instruct-GGUF \
+    qwen2.5-3b-instruct-q4_k_m.gguf \
+    --local-dir . \
+    --local-dir-use-symlinks False
+```
+
+> **Note:** You can change the model filename in `configs/rag.yaml` if needed.
+
+5. **Return to the project root**:    
+
+```bash
+cd ..
+```
+
+---
+
+# Navigate the project
+## Create Index (default)  
+
+- You need to provide your own datasource for the model. **No data is included in this repository.**
+- To start indexing, place a first aid instruction document (`.txt`) into the `root/data/docs` directory.    
+
+Then run the following command:
+
+```shell
+# Standard CLI call
 poetry run rag ingest
 ```
 
-To use other parameters, modify the `ingest` method in `src/rag/cli.py`.
+  
+- To use other options, you can modify the parameters in the `ingest` method in `src/rag/cli.py`.  
 
-| parameter     | description                  |
-| ------------- | ---------------------------- |
-| `docs_dir`    | where to find source docs    |
-| `out_dir`     | where to write the index     |
-| `embed_model` | which embedding model to use |
+| Parameter          | Description                                                                         |
+| ------------------ | ----------------------------------------------------------------------------------- |
+| `--docs`           | Folder containing the source documents (default: `data/docs`)                       |
+| `--out`            | Folder where the HNSW index will be stored (default: `data/index`)                  |
+| `--embed-model`    | Embedding model to use, e.g., `sentence-transformers/all-MiniLM-L6-v2`              |
+| `--custom_chunker` | Use the **CustomChunker** format for highly structured documents (default: `False`) |
+
+  
+---
+
+## CustomChunker (`--custom_chunker`)
+
+An alternative chunking strategy is available to improve retrieval quality and model output.  
+This option requires a datasource with a specific input format.
+
+Enable it with:
+
+```shell
+poetry run rag ingest --custom_chunker
+```
+
+### Required Input Structure
+
+```
+---
+Question:
+* question 1
+* question 2
+* question 3  
+
+Title:
+* task 1
+* task 2
+* task 3
+---
+```
+
+### Processing Steps
+
+- Each section (`Question` and `Title`) is **chunked separately**    
+- Each question is **embedded individually**    
+- The corresponding tasks are added as **context for each question**    
+- Each chunk is assigned a **unique ID** and optional metadata from the source document    
+- Retrieval is optimized by comparing input queries against the embedded questions
+
 
 ---
 
-### Interact **without** a server
+### Example CLI Call Using Custom Chunker
 
-*(creates a new model instance each run)*
-
-Generic form:
-
-```bash
-poetry run rag <module> [options] "your question"
+```shell
+poetry run rag ingest --docs data/docs --out data/index --embed-model sentence-transformers/all-MiniLM-L6-v2 --custom_chunker
 ```
 
-Common options:
+## Interact Without Server – New Model Instance per Run
 
-* `-c configs/rag.yaml` – config for the LLM/RAG
-* `--index data/index` – path to the retriever index
+| code                  | description                      |
+| --------------------- | -------------------------------- |
+| poerty run rag module | run any module in src/rag/cli.py |
+| -c configs/rag.yaml   | configs for llm                  |
+| --index data/index    | indexes for retriever            |
 
-Available modules:
+modules:
 
-| **module**                | **required arg** | **RAG** |
-| ------------------------- | ---------------- | ------- |
-| `ask`                     | `str`            | yes     |
-| `llm-stream`              | `str`            | yes     |
-| `ask-no-retrieval`        | `str`            | no      |
-| `llm-sanity-no-retrieval` | `str`            | no      |
-| `llm-stream-no-retrieval` | `str`            | no      |
+| **module**              | **required** | RAG |
+| ----------------------- | ------------ | --- |
+| ask                     | str          | yes |
+| llm-stream              | str          | yes |
+| ask-no-retrieval        | str          | no  |
+| llm-sanity-no-retrieval | str          | no  |
+| llm-stream-no-retrieval | str          | no  |
 
-Examples:
-
-```bash
-# Streaming RAG with config + index
-poetry run rag llm-stream -c configs/rag.yaml --index data/index \
-  "What is the rhythm or speed for applying CPR?"
-
-# Quick sanity check (no retrieval), streaming
-poetry run rag llm-stream-no-retrieval "Put your question here"
+```shell
+	poetry run rag llm-stream -c configs/rag.yaml --index data/index \
+	  "what is the rhytm or speed for applying CPR?"
 ```
 
----
+works also:
 
-### Start & Use Local Server
+```shell
+	poetry run rag llm-stream "what is the rhytm or speed for applying CPR?"
+```
 
-#### Terminal 1 – server
+## Start + Use local server 
 
-Runs `async def lifespan(app: FastAPI)` in `src/rag/server.py`:
+### Terminal 1 - server
+
+run `async def lifespan(app: FastAPI)`in `src/rag/server.py`:
 
 ```bash
 poetry run uvicorn rag.server:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-#### Terminal 2 – client
+### Terminal 2 - client
 
-##### Healthcheck:
+#### Healthcheck:
+  
 
 ```bash
 curl http://127.0.0.1:8000/health
 # -> {"ok": true}
 ```
 
-##### RAG query (retrieval + generation):
 
-At the moment, the server’s **streaming endpoint** for RAG queries is not functional.
-This means the following request will not work as expected:
+#### RAG query (retrieval + generation):
+
+use streaming:  
 
 ```bash
 curl -N -X POST http://127.0.0.1:8000/rag \
-  -H "Content-Type: application/json" \
-  -d '{"q": "What should I do next for an unresponsive adult?"}'
+-H "Content-Type: application/json" \
+-d '{"q": "What should I do next for an unresponsive adult?"}'
 ```
 
-Instead, you should use the **non-streaming endpoint**, which is currently supported:
+  
+without streaming:  
 
 ```bash
 curl -N -X POST http://127.0.0.1:8000/rag_once \
-  -H "Content-Type: application/json" \
-  -d '{"q": "What should I do next for an unresponsive adult?"}'
+-H "Content-Type: application/json" \
+-d '{"q": "What should I do next for an unresponsive adult?"}'
 ```
 
-Support for streaming will be added in a later version. For now, please rely on `/rag_once` for retrieval + generation queries.
-
-
+  
 | Option                                                           | Meaning                                                | Why it matters here                                                  |
 | ---------------------------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------- |
 | `-N`                                                             | **Disable buffering** (no output buffering in `curl`). | Ensures you see tokens immediately, instead of buffered all at once. |
@@ -189,23 +306,22 @@ Support for streaming will be added in a later version. For now, please rely on 
 | `http://127.0.0.1:8000/rag`                                      | **Target URL**.                                        | Local FastAPI server running on port 8000.                           |
 | `-H "Content-Type: application/json"`                            | **Set request header**.                                | Tells the server the body is JSON.                                   |
 | `-d '{"q": "What should I do next for an unresponsive adult?"}'` | **Request body (data)**.                               | Provides the input (`q`) that your RAG system should answer.         |
-
-shorter way
+ 
+shorter way  
 
 ```bash
-curl --json '{"q":"What to do when arriving at an accident?"}' http://127.0.0.1:8000/rag
 
+curl --json '{"q":"What to do when arriving at an accident?"}' http://127.0.0.1:8000/rag
 ```
 
----
 
-## ⚠️ Disclaimer
+# ⚠️ Disclaimer
 
 This project is **for training and research purposes only**.
 It does **not** replace certified medical training or real emergency protocols.
 Always follow official ERC guidelines and seek certified instruction.
 
-### Legal Notice
+## Legal Notice
 
 This project uses **paraphrased and simplified summaries** inspired by the recommendations of the **European Resuscitation Council (ERC)**.
 It does **not** include or redistribute official ERC guideline texts.
@@ -213,14 +329,14 @@ For authoritative and up-to-date information, consult the official ERC publicati
 
 ---
 
-## 📦 Third-Party Licenses
+# 📦 Third-Party Licenses
 
 This project depends on several open-source libraries (MIT, Apache-2.0, BSD-3-Clause, PSF).
 For details, see [THIRD\_PARTY\_LICENSES.md](./THIRD_PARTY_LICENSES.md).
 
 ---
 
-## Notes & Gotchas (read this)
+# Notes & Gotchas (read this)
 
 * Local models can hallucinate. Keep prompts concrete and verify outputs against ERC sources.
 * Smaller GGUF models run fast on M-series CPUs/Metal but may reduce accuracy—benchmark before training sessions.
