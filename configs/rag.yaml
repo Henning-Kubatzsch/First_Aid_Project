@@ -15,5 +15,3 @@ llm:
   # stop: ["</s>", "<|endoftext|>"]               # common stop tokens (family-specific ones come from template)
   use_mmap: true
   use_mlock: true
-
-

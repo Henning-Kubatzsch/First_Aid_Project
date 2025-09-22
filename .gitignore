@@ -207,7 +207,8 @@ marimo/_lsp/
 __marimo__/
 
 # Model weigths
-/models
+models/*
+!models/.gitkeep
 
 # Local indexes, embeddings
 # ignore everything incide this folder
