@@ -97,10 +97,6 @@ pyenv --version
 
 ---
 
-Sure! Here's a handy **reference table of common `pyenv` commands**, what they do, and optional usage examples:
-
----
-
 ### 📋 **`pyenv` Command Reference Table**
 
 |Command|Description|Example|
