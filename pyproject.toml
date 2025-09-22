@@ -1,0 +1,76 @@
+[build-system]
+requires = ["poetry-core>=1.9.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "mr-first-aid-rag"
+version = "0.1.0"
+description = "Local, offline RAG prototype for First Aid training (ERC) with conversational progression."
+authors = ["Henning Kubatzsch <henningkb@outlook.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+  { include = "rag", from = "src" },
+  { include = "scripts" }
+]
+
+[tool.poetry.dependencies]
+python = ">=3.10, <3.14"
+
+# --- Core runtime deps (lean) ---
+PyYAML = "^6.0"
+numpy = ">=1.26,<3.0"
+pydantic = "^2.6.0"
+hnswlib = "^0.8.0"
+#langchain = "^0.2.0"
+#langchain-community = "^0.2.0"
+sentence-transformers = "^3.0.0"
+huggingface-hub = "^0.23.0"
+torch = "^2.8"
+accelerate = "^1.10"
+llama-cpp-python = "0.2.90"
+click = "8.1.7"
+typer = "0.15.1"
+fastapi = "^0.116.1"
+uvicorn = "^0.35.0"
+fastapi-cli = "^0.0.10"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.0"
+pytest-cov = "^5.0.0"
+pipdeptree = "^2.23.0"
+deptry = "^0.20.0"
+mypy = "^1.18.1"
+syrupy = "^4.9.1"
+
+[tool.poetry.group.notebook.dependencies]
+jupyterlab = "^4.2.0"
+ipykernel = "^6.29.0"
+ipywidgets = "^8.1.0"
+matplotlib = "^3.9.0"
+
+[tool.poetry.scripts]
+rag = "rag.cli:app"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "--snapshot-warn-unused --strict-markers --strict-config --durations=5"
+testpaths = ["tests"]
+markers = [
+  "integration: marks tests as integration (deselect with '-m \"not integration\"')",
+  "slow: potentially slow tests",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/rag"]
+omit = [
+  "src/rag/server.py",    # falls schwer abzudecken, später aktivieren
+  "src/rag/cli.py"        # dito
+]
+
+[tool.coverage.report]
+skip_covered = true
+show_missing = true
+
+

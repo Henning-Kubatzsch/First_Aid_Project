@@ -1,0 +1,1 @@
+# ingestion orchestrator: read docs -> chunk -> embed -> build/save the HNSW index

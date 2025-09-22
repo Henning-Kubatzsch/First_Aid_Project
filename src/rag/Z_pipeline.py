@@ -1,0 +1,1 @@
+# End-to-end ask: embed query -> retrieve -> compose prompt -> generate -> return answer + sources
