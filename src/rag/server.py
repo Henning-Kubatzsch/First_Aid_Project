@@ -80,18 +80,19 @@ def health():
     return {"ok": True}
 
 @app.post("/rag_new")
-def rag(query: dict):
+def rag_new(query: dict):
     q = query["q"]
 
     # 1) Retrieve
     hits = S.retriever.search(q)
 
-    print("="*20)
-    print(hits)
-    print("="*20)
+    print("="*20, flush = True)
+    print(f"in rag_new hits: {hits}")
+    print("="*20, flush = True)
 
-    # 2) Prompts bauen
+    # 2) build prompts
     opts = PromptOptions(language="en", style="steps", max_context_chars=4000, cite=True)
+
     system, user = build_prompts(q, hits, opts)
     msgs = S.llm.make_messages(user=user, system=system)
 
@@ -99,7 +100,8 @@ def rag(query: dict):
     def gen() -> Iterable[bytes]:
         buf = []
         try:
-            for tok in S.llm.chat_stream(msgs, max_tokens=256, temperature=0.2):
+            for tok in S.llm.chat_stream(
+                msgs, max_tokens=256, temperature=0.2):
                 buf.append(tok)
                 yield tok.encode("utf-8")  # live stream
         except Exception as e:
@@ -121,6 +123,8 @@ def rag(query: dict):
         raise HTTPException(503, "Service not ready")
     q = query["q"]
     # 1) Retrieve documents
+    print("="*20, flush=True)
+    print(f"hits in server: {hits}", flush=True)
     hits = S.retriever.search(q)
     # 2) Build compact context
     context = "\n\n".join(f"[{i+1}] {h['text']}" for i, h in enumerate(hits))
@@ -151,16 +155,18 @@ def rag_once(query: dict):
     if not (S.llm and S.retriever):
         raise HTTPException(503, "Service not ready")
     q = query["q"]
+    # 1) Retrieve documents
     hits = S.retriever.search(q)
-
-    msgs = S.llm.make_messages(
-        user=(
-            "Context:\n"
-            + "\n\n".join(f"[{i+1}] {d['text']}" for i, d in enumerate(hits))
-            + f"\n\nQuestion:\n{q}"
-        ),
-        system="You are a concise, ERC-aligned training assistant.",
+    # 2) Build compact context
+    context = "\n\n".join(f"[{i+1}] {h['text']}" for i, h in enumerate(hits))
+    system = (
+        "You are a concise, ERC-aligned training assistant. "
+        "Answer with short, safe, step-by-step instructions and cite [1], [2] as needed."
     )
+    user = f"Context:\n{context}\n\nQuestion:\n{q}"
+    # 3) Construct chat message
+    msgs = S.llm.make_messages(user=user, system=system)
+    # 4) Streaming generator with error handling
 
     out = S.llm.chat(msgs, max_tokens=256, temperature=0.2)
     return {"answer": out}

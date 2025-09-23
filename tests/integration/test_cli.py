@@ -103,8 +103,8 @@ def retriever_stack_mocks(monkeypatch):
 def test_ingest_calls_builder_and_echo(monkeypatch, tmp_path):
     called = {"args": None}
 
-    def fake_builder(*, docs_dir, out_dir, model_name):
-        called["args"] = (docs_dir, out_dir, model_name)
+    def fake_builder(*, docs_dir, out_dir, model_name, **kwargs):
+        called["args"] = (docs_dir, out_dir, model_name, kwargs)
 
     # CLI importiert build_erc_index aus scripts.build_index
     monkeypatch.setattr(cli, "build_erc_index", fake_builder, raising=True)
@@ -113,11 +113,11 @@ def test_ingest_calls_builder_and_echo(monkeypatch, tmp_path):
     out = tmp_path / "index"
     res = runner.invoke(
         cli.app,
-        ["ingest", "--docs", str(docs), "--out", str(out), "--embed-model", "my-embedder"],
+        ["ingest", "--docs", str(docs), "--out", str(out), "--embed-model", "my-embedder", "--custom_chunker"],
     )
     assert res.exit_code == 0, res.output
     assert f"Index written to {out}" in res.output
-    assert called["args"] == (str(docs), str(out), "my-embedder")
+    assert called["args"] == (str(docs), str(out), "my-embedder", {'custom_chunker': True})
 
 
 # -----------------------------
