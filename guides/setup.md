@@ -93,5 +93,3 @@ huggingface-cli download Qwen/Qwen2.5-3B-Instruct-GGUF \
 ```bash
 cd ..
 ```
-
----
