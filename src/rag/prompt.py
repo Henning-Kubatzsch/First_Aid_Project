@@ -54,7 +54,7 @@ def postprocess_answer(
     Cleans up typical artifacts and ensures formatting & citations are valid.
     """
     opts = opts or PromptOptions()
-    # a = _normalize(answer)
+    a = _normalize(answer)
 
     # Remove LLM markup/stops
     a = re.sub(r"</s>|<\|endoftext\|>|\[/?assistant\]|\[/?user\]", "", a, flags=re.I)
@@ -85,28 +85,35 @@ def _build_context_and_bib(hits: List[Dict], max_chars: int) -> Tuple[str, str]:
     """
     cleaned = []
     total = 0
-    for i, h in enumerate(hits, start=1):
-        # print("="*30, flush=True)
-        # print(h.get("built_context_and_bib text: ", flush=True))
+    for i, h in enumerate(hits, start=1):    
         txt = _squash(h.get("text", ""), hard_trim=1200)
         entry = f"[{i}] {txt}"
         if total + len(entry) > max_chars:
             break
         cleaned.append(entry)
         total += len(entry)
-
     context = "\n\n".join(cleaned)
 
     bib_lines = []
     for i, h in enumerate(hits, start=1):
         m = h.get("meta", {}) or {}
-        title = m.get("title") or m.get("doc") or "Unknown"
+        title = m.get("title") or m.get("doc") or m.get("source") or "Unknown"
         sec = m.get("section") or m.get("page") or ""
         year = m.get("year") or ""
-        extra = f", {sec}" if sec else ""
-        year_str = f" ({year})" if year else ""
-        bib_lines.append(f"[{i}] {title}{extra}{year_str}")
+        id_string = m.get("id") or ""
 
+        bib_lines.append(f"[{i}]")
+        if not m:
+            bib_lines.append("no meta data")
+        else:
+            if title:
+                bib_lines.append(f" title: {title}")
+            if sec:
+                bib_lines.append(f" sec: {sec}")
+            if year:
+                bib_lines.append(f" year: {year}")
+            if id_string:
+                bib_lines.append(f" id: {id_string}")
     bib = "\n".join(bib_lines)
     return context, bib
 
@@ -115,11 +122,11 @@ def _system_prompt(opts: PromptOptions, bib: str) -> str:
         rules = textwrap.dedent(
         f"""
 
-        You are a concise, safety-conscious assistant, aligned with ERC/First-Aid-Guidelines.
-        Answer briefly, correctly, with clear steps. If you are unsure, state it explicitly.
-        When context citations exist, cite with [1], [2], … corresponding to the source.
+        You are a concise, safety-first assistant aligned with ERC/first-aid guidelines.
+        Answer briefly and correctly with clear steps. If unsure, say so explicitly.
+        When context citations exist, cite [1], [2], … matching the source list.
         Sources:
- 
+
         {bib}
 
         """).strip()
@@ -144,7 +151,7 @@ def _answer_rules(opts: PromptOptions, cite: bool = True) -> str:
             "Be precise and safety-first.",
             "If unsure, say: 'I'm unsure.'",
         ]
-        if cite and opts.cite:
+        if opts.cite:
             base.append("Cite sources using [n] that refer to the numbered context chunks.")
     else:
         base = [
@@ -152,19 +159,17 @@ def _answer_rules(opts: PromptOptions, cite: bool = True) -> str:
             "Be precise and safety-first.",
             "If unsure, say: 'I'm unsure.'",
         ]
-        if cite and opts.cite:
+        if opts.cite:
             base.append("Cite sources using [n] that refer to the numbered context chunks.")
     return "- " + "\n- ".join(base)
 
-# don't need this method as chunker is already normalizing
-#def _normalize(s: str) -> str:
-#    print("="*30, flush = True)
-#    print(f"in _normalize s: {s}", flush = True)
-#    s = re.sub("\r\n", "\n", s)
-#    s = re.sub("\r", "\n", s)
-#    # collapse excessive blank lines
-#    s = re.sub(r"\n{3,}", "\n\n", s)
-#    return s.strip()
+# TODO: don't need this method as chunker is already normalizing
+def _normalize(s: str) -> str:
+   s = re.sub("\r\n", "\n", s)
+   s = re.sub("\r", "\n", s)
+   # collapse excessive blank lines
+   s = re.sub(r"\n{3,}", "\n\n", s)
+   return s.strip()
 
 def _squash(s: str, hard_trim: int = 1200) -> str:
     # s = _normalize(s)
@@ -174,11 +179,12 @@ def _squash(s: str, hard_trim: int = 1200) -> str:
 
 def _force_numbered_list(s: str) -> str:
     # Split into meaningful sentences/lines and number them
-    parts = [p.strip(" -•\t") for p in re.split(r"[.\n]\s+", s) if p.strip()]
+    parts = [p.strip(" -•\t") for p in re.split(r'\.\s+|\n', s) if p.strip()]
     parts = [p for p in parts if len(p) > 0]
     if not parts:
         return s
-    return "\n".join(f"{i+1}. {p}" for i, p in enumerate(parts))
+    
+    return "\n".join(f"{i+1}. {p}" for i, p in enumerate(parts)).join(f" length: {len(parts)}")
 
 def _clamp_citations(s: str, max_n: int) -> str:
     # Only allow citations [1..max_n]; drop or reduce others
