@@ -3,6 +3,7 @@
 ![Project preview](<ChatGPT Image 19. Aug. 2025, 16_24_51.png>)
 
 🚑 **Project Idea**
+
 A **local, offline intelligent training agent** for **First Aid and resuscitation**.
 Long-term vision: an **interactive Mixed Reality (MR)** environment (Quest 3, multi-user) where trainees practice according to **ERC (European Resuscitation Council) guidelines**.
 A pedagogical agent, powered by **RAG (Retrieval-Augmented Generation)** and **Agentic RAG**, guides users step by step and adapts in real time.
@@ -202,9 +203,9 @@ curl -N -X POST http://127.0.0.1:8000/rag \
 without streaming:  
 
 ```bash
-curl -N -X POST http://127.0.0.1:8000/rag_once \
+curl -N -X POST http://127.0.0.1:8000/rag_new \
 -H "Content-Type: application/json" \
--d '{"q": "What should I do next for an unresponsive adult?"}'
+-d '{"q": "What is the correct rate for performing CPR compressions"}'
 ```
 
   
@@ -239,10 +240,14 @@ For authoritative and up-to-date information, consult the official ERC publicati
 
 ---
 
-# 📦 Third-Party Licenses
 
-This project depends on several open-source libraries (MIT, Apache-2.0, BSD-3-Clause, PSF).
-For details, see [THIRD\_PARTY\_LICENSES.md](./THIRD_PARTY_LICENSES.md).
+# 📄 License
+This project is licensed under the **[Apache License 2.0](LICENSE)**.
+For attribution, third-party dependencies, and additional notices, see:
+- **[LICENSE](LICENSE)** – Full license text
+- **[NOTICE.md](NOTICE.md)** – Attribution and project-specific notices
+- **[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)** – Licenses of included dependencies
+
 
 ---
 
