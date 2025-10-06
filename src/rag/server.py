@@ -79,6 +79,38 @@ def health():
     """Simple health check endpoint."""
     return {"ok": True}
 
+@app.post("/rag")
+def rag(query: dict):
+    """Streaming RAG endpoint."""
+    if not (S.llm and S.retriever):
+        raise HTTPException(503, "Service not ready")
+    q = query["q"]
+    # 1) Retrieve documents
+    hits = S.retriever.search(q)
+    print("="*20, flush=True)
+    print(f"hits in server: {hits}", flush=True)
+    # 2) Build compact context
+    context = "\n\n".join(f"[{i+1}] {h['text']}" for i, h in enumerate(hits))
+    system = (
+        "You are a concise, ERC-aligned training assistant. "
+        "Answer with short, safe, step-by-step instructions and cite [1], [2] as needed."
+    )
+    user = f"Context:\n{context}\n\nQuestion:\n{q}"
+    # 3) Construct chat messages
+    msgs = S.llm.make_messages(user=user, system=system)
+    # 4) Streaming generator with error handling
+    def gen() -> Iterable[bytes]:
+        try:
+            for tok in S.llm.chat_stream(
+                msgs, max_tokens=1024, temperature=0.2
+            ):
+                yield tok.encode("utf-8")
+        except Exception as e:
+            # Return error in the stream instead of closing abruptly
+            err = f"\n\n[stream-error] {type(e).__name__}: {e}\n"
+            yield err.encode("utf-8")
+    return StreamingResponse(gen(), media_type="text/plain; charset=utf-8")
+
 @app.post("/rag_new")
 def rag_new(query: dict):
     q = query["q"]
@@ -116,37 +148,7 @@ def rag_new(query: dict):
                 pass
     return StreamingResponse(gen(), media_type="text/plain; charset=utf-8")
 
-@app.post("/rag")
-def rag(query: dict):
-    """Streaming RAG endpoint."""
-    if not (S.llm and S.retriever):
-        raise HTTPException(503, "Service not ready")
-    q = query["q"]
-    # 1) Retrieve documents
-    print("="*20, flush=True)
-    print(f"hits in server: {hits}", flush=True)
-    hits = S.retriever.search(q)
-    # 2) Build compact context
-    context = "\n\n".join(f"[{i+1}] {h['text']}" for i, h in enumerate(hits))
-    system = (
-        "You are a concise, ERC-aligned training assistant. "
-        "Answer with short, safe, step-by-step instructions and cite [1], [2] as needed."
-    )
-    user = f"Context:\n{context}\n\nQuestion:\n{q}"
-    # 3) Construct chat messages
-    msgs = S.llm.make_messages(user=user, system=system)
-    # 4) Streaming generator with error handling
-    def gen() -> Iterable[bytes]:
-        try:
-            for tok in S.llm.chat_stream(
-                msgs, max_tokens=1024, temperature=0.2
-            ):
-                yield tok.encode("utf-8")
-        except Exception as e:
-            # Return error in the stream instead of closing abruptly
-            err = f"\n\n[stream-error] {type(e).__name__}: {e}\n"
-            yield err.encode("utf-8")
-    return StreamingResponse(gen(), media_type="text/plain; charset=utf-8")
+
 
 
 @app.post("/rag_once")
