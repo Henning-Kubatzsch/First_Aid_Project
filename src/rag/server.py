@@ -1,17 +1,19 @@
 # src/rag/server.py
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from typing import Iterable
 import yaml
 from contextlib import asynccontextmanager
 import logging, gc
+from pydantic import BaseModel
+from typing import Optional
 
 from rag.generator import LocalLLM, LLMConfig
 from rag.embed import SBertEmbeddings
 from rag.indexer import HnswIndex
 from rag.retriever import Retriever
-from rag.prompt import build_prompts, postprocess_answer, PromptOptions
-
+from rag.prompt import build_prompts, postprocess_answer, PromptOptions, PromptOptionsOverride, merge_prompt_options
+from rag.settings import get_settings
 
 log = logging.getLogger(__name__)
 
@@ -21,6 +23,13 @@ class State:
     embedder: SBertEmbeddings | None = None
     index: HnswIndex | None = None
     retriever: Retriever | None = None
+
+class RagRequest(BaseModel):
+    q: str
+    options: Optional[PromptOptionsOverride] = None 
+
+def get_prompt_defaults():
+    return get_settings().prompt
 
 S = State()
 yaml_path = "configs/rag.yaml"
@@ -79,6 +88,48 @@ def health():
     """Simple health check endpoint."""
     return {"ok": True}
 
+@app.post("/rag_new")
+def rag_new(req: RagRequest, defaults: PromptOptions = Depends(get_prompt_defaults)):
+    
+    opts = merge_prompt_options(defaults, req.options)
+    q = req.q
+
+    # 1) Retrieve
+    hits = S.retriever.search(q)
+
+    #print("="*20, flush = True)
+    #print(f"in rag_new hits: {hits}")
+    #print("="*20, flush = True)
+
+    # 2) build prompts
+    # opts = PromptOptions(language="en", style="steps", max_context_chars=4000, cite=True)
+    opts = merge_prompt_options(defaults, req.options)
+
+    system, user = build_prompts(q, hits, opts)
+
+    system, user = build_prompts(q, hits)
+    msgs = S.llm.make_messages(user=user, system=system)
+
+    # 3) Stream + Postprocessing
+    def gen() -> Iterable[bytes]:
+        buf = []
+        try:
+            for tok in S.llm.chat_stream(
+                msgs, max_tokens=256, temperature=0.2):
+                buf.append(tok)
+                yield tok.encode("utf-8")  # live stream
+        except Exception as e:
+            yield f"\n\n[stream-error] {type(e).__name__}: {e}\n".encode("utf-8")
+        finally:
+            # optional: final „clean“ Ausgabe in Logs
+            try:
+                final = "".join(buf)
+                clean = postprocess_answer(final, num_sources=len(hits), opts=opts)
+                print("\n--- POSTPROCESSED ---\n", clean)
+            except Exception:
+                pass
+    return StreamingResponse(gen(), media_type="text/plain; charset=utf-8")
+
 @app.post("/rag")
 def rag(query: dict):
     """Streaming RAG endpoint."""
@@ -110,46 +161,6 @@ def rag(query: dict):
             err = f"\n\n[stream-error] {type(e).__name__}: {e}\n"
             yield err.encode("utf-8")
     return StreamingResponse(gen(), media_type="text/plain; charset=utf-8")
-
-@app.post("/rag_new")
-def rag_new(query: dict):
-    q = query["q"]
-
-    # 1) Retrieve
-    hits = S.retriever.search(q)
-
-    print("="*20, flush = True)
-    print(f"in rag_new hits: {hits}")
-    print("="*20, flush = True)
-
-    # 2) build prompts
-    opts = PromptOptions(language="en", style="steps", max_context_chars=4000, cite=True)
-
-    system, user = build_prompts(q, hits, opts)
-    msgs = S.llm.make_messages(user=user, system=system)
-
-    # 3) Stream + Postprocessing
-    def gen() -> Iterable[bytes]:
-        buf = []
-        try:
-            for tok in S.llm.chat_stream(
-                msgs, max_tokens=256, temperature=0.2):
-                buf.append(tok)
-                yield tok.encode("utf-8")  # live stream
-        except Exception as e:
-            yield f"\n\n[stream-error] {type(e).__name__}: {e}\n".encode("utf-8")
-        finally:
-            # optional: final „clean“ Ausgabe in Logs
-            try:
-                final = "".join(buf)
-                clean = postprocess_answer(final, num_sources=len(hits), opts=opts)
-                print("\n--- POSTPROCESSED ---\n", clean)
-            except Exception:
-                pass
-    return StreamingResponse(gen(), media_type="text/plain; charset=utf-8")
-
-
-
 
 @app.post("/rag_once")
 def rag_once(query: dict):

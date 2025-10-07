@@ -49,7 +49,6 @@ def get_retriever_format(
     print(docs)
 
 
-
 @app.command("ask")
 def ask(
     question: str = typer.Argument(..., help="User question"),
