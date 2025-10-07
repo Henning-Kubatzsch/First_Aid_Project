@@ -90,9 +90,11 @@ def health():
 
 @app.post("/rag_new")
 def rag_new(req: RagRequest, defaults: PromptOptions = Depends(get_prompt_defaults)):
-    
+    print("1")
     opts = merge_prompt_options(defaults, req.options)
+    # q = req.q
     q = req.q
+    print("3")
 
     # 1) Retrieve
     hits = S.retriever.search(q)
