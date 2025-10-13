@@ -101,12 +101,17 @@ def rag_new(req: RagRequest, defaults: PromptOptions = Depends(get_prompt_defaul
     # 1) Retrieve
     hits = S.retriever.search(q)
 
+    print(f"count hits: {len(hits)}")
+
     # 2) build prompts
     system, user = build_prompts(q, hits, opts)
+
+    print(f"user: {user}")
+
     # system, user = build_prompts(q, hits)
     msgs = S.llm.make_messages(user=user, system=system)
 
-    print(f"Returned form model: \n\n{msgs}")
+    print(f"\n\nReturned from make_messages: {msgs}\n\n")
 
     # 3) Stream + Postprocessing
     def gen() -> Iterable[bytes]:

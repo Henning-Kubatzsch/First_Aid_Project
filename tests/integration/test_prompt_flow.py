@@ -12,7 +12,7 @@ import pytest
 from src.rag.prompt import (
     PromptOptions,
     _build_context_and_bib,
-    _system_prompt,
+    _system_prompt_for_citing,
     _answer_rules,
 )
 
@@ -141,7 +141,7 @@ def test_generate_prompt_flow_table():
     tracer.record("after_build_context_and_bib", locals(), keys=["context", "bib"])
 
     # 2) System message
-    system = _system_prompt(opts, bib)
+    system = _system_prompt_for_citing(opts, bib)
     tracer.record("after_system_prompt", locals(), keys=["system"])
 
     # 3) User message (simulate both cite True/False branches)

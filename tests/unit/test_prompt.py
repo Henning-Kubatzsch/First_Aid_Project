@@ -1,4 +1,4 @@
-from rag.prompt import build_prompts, _build_context_and_bib, _squash, _system_prompt, _answer_rules, _normalize, _force_numbered_list, _clamp_citations
+from rag.prompt import build_prompts, _build_context_and_bib, _squash, _system_prompt, _answer_rules, _normalize, _force_numbered_list, _clamp_citations, _system_prompt_for_citing
 import random
 import uuid
 from dataclasses import dataclass
@@ -96,10 +96,10 @@ def test_squash():
 
 
 # TODO: test with and without bib
-def test_system_prompt():
+def test_system_prompt_for_citing():
     bib = make_fake_bib()
     opst = FakePromptOptions(max_context_chars=400)
-    system_prompt = _system_prompt(opst, bib)
+    system_prompt = _system_prompt_for_citing(opst, bib)
     assert system_prompt
 
 # TODO: check for language selection

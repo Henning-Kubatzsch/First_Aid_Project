@@ -19,6 +19,9 @@ llm:
 prompt:
   language: en         # en | de
   style: qa         # steps | qa
-  max_context_chars: 20
+  max_context_chars: 3000
   cite: false
   require_citations: false
+
+retriever:
+  k: 1

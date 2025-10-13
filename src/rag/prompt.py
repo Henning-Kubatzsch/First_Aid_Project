@@ -51,25 +51,25 @@ def build_prompts(
     """
     opts = opts or PromptOptions()
 
-    print(f"opts in build_prompts: {opts}")
+    # print(f"hits: {hits}")
+
+    print(f"\n\nopts in build_prompts: {opts}\n\n")
     # print(f"max_context_chars: {opts.max_context_chars}")
     # 1) Context + bibliography
     context, bib = _build_context_and_bib(hits, max_chars=opts.max_context_chars)
 
+    print(f"\n\ncontext after _build_context: {context}\n\n")
+
     # 2) System message
     if opts.cite == False:
         system = _system_prompt(opts)
-    else:
-        system = _system_prompt_for_citing(opts, bib)
-
-    # 3) User message
-    if opts.cite:
         user = f"Context:\n{context}\n\nQuestion:\n{question}\n\n" \
                f"Answer rules:\n{_answer_rules(opts)}"
     else:
+        system = _system_prompt_for_citing(opts, bib)
         user = f"Context:\n{context}\n\nQuestion:\n{question}\n\n" \
                f"Answer rules:\n{_answer_rules(opts, cite=False)}"
-
+        
     return system, user
 
 
@@ -115,12 +115,15 @@ def _build_context_and_bib(hits: List[Dict], max_chars: int) -> Tuple[str, str]:
     total = 0
     for i, h in enumerate(hits, start=1):    
         txt = _squash(h.get("text", ""), hard_trim=1200)
+        print(f"iteration {i}, txt: {txt}")
         entry = f"[{i}] {txt}"
         if total + len(entry) > max_chars:
             break
         cleaned.append(entry)
         total += len(entry)
     context = "\n\n".join(cleaned)
+
+    print(f"\n\ncontext in _build_context: {context}\n\n")
 
     bib_lines = []
     for i, h in enumerate(hits, start=1):
@@ -177,7 +180,7 @@ def _system_prompt(opts: PromptOptions) -> str:
         rules = textwrap.dedent(
         f"""
         
-        First Aid Agent. 
+        Du bist ein pädagogischer Agent für Erste Hilfe.
 
         """).strip()
     else:
@@ -195,7 +198,10 @@ def _answer_rules(opts: PromptOptions, cite: bool = True) -> str:
             #"Use short, numbered steps (1., 2., 3.).",
             #"Be precise and safety-first.",
             #"If unsure, say: 'I'm unsure.'",
-            "antworte möglichst kurz"
+            "Antworte in EXAKT ZWEI SÄTZEN in einem paragraph", 
+            "Gib eine kurze Zusammenfassung des gegebenen Kontext",
+            "Eine einfache Aufgabe",
+            "keine Listen, Aufzählungen, Stichpunkte, Zeilenumbrüche, Überschriften"
         ]
         if opts.cite:
             base.append("Cite sources using [n] that refer to the numbered context chunks.")
@@ -205,7 +211,7 @@ def _answer_rules(opts: PromptOptions, cite: bool = True) -> str:
             #"Be precise and safety-first.",
             #"If unsure, say: 'I'm unsure.'",
             "Output EXACTLY TWO SENTENCES in one paragraph"
-            "Give a brief summara of the given context.",
+            "Give a brief summary of the given context.",
             "One simple task.",
             "no lists, numbering, bullets, line breaks, or headings"
         ]
