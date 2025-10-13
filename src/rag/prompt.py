@@ -51,11 +51,16 @@ def build_prompts(
     """
     opts = opts or PromptOptions()
 
+    print(f"opts in build_prompts: {opts}")
+    # print(f"max_context_chars: {opts.max_context_chars}")
     # 1) Context + bibliography
     context, bib = _build_context_and_bib(hits, max_chars=opts.max_context_chars)
 
     # 2) System message
-    system = _system_prompt(opts, bib)
+    if opts.cite == False:
+        system = _system_prompt(opts)
+    else:
+        system = _system_prompt_for_citing(opts, bib)
 
     # 3) User message
     if opts.cite:
@@ -140,7 +145,7 @@ def _build_context_and_bib(hits: List[Dict], max_chars: int) -> Tuple[str, str]:
     bib = "\n".join(bib_lines)
     return context, bib
 
-def _system_prompt(opts: PromptOptions, bib: str) -> str:
+def _system_prompt_for_citing(opts: PromptOptions, bib: str) -> str:
     if opts.language == "de":
         rules = textwrap.dedent(
         f"""
@@ -167,20 +172,42 @@ def _system_prompt(opts: PromptOptions, bib: str) -> str:
         """).strip()
     return rules
 
+def _system_prompt(opts: PromptOptions) -> str:
+    if opts.language == "de":
+        rules = textwrap.dedent(
+        f"""
+        
+        First Aid Agent. 
+
+        """).strip()
+    else:
+        rules = textwrap.dedent(
+        f"""
+
+        You are a padagogicle Agent in a First Aid situation.
+
+        """).strip()
+    return rules
+
 def _answer_rules(opts: PromptOptions, cite: bool = True) -> str:
     if opts.language == "de":
         base = [
-            "Use short, numbered steps (1., 2., 3.).",
-            "Be precise and safety-first.",
-            "If unsure, say: 'I'm unsure.'",
+            #"Use short, numbered steps (1., 2., 3.).",
+            #"Be precise and safety-first.",
+            #"If unsure, say: 'I'm unsure.'",
+            "antworte möglichst kurz"
         ]
         if opts.cite:
             base.append("Cite sources using [n] that refer to the numbered context chunks.")
     else:
         base = [
-            "Use short, numbered steps (1., 2., 3.).",
-            "Be precise and safety-first.",
-            "If unsure, say: 'I'm unsure.'",
+            #"Use short, numbered steps (1., 2., 3.).",
+            #"Be precise and safety-first.",
+            #"If unsure, say: 'I'm unsure.'",
+            "Output EXACTLY TWO SENTENCES in one paragraph"
+            "Give a brief summara of the given context.",
+            "One simple task.",
+            "no lists, numbering, bullets, line breaks, or headings"
         ]
         if opts.cite:
             base.append("Cite sources using [n] that refer to the numbered context chunks.")

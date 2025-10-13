@@ -90,27 +90,23 @@ def health():
 
 @app.post("/rag_new")
 def rag_new(req: RagRequest, defaults: PromptOptions = Depends(get_prompt_defaults)):
-    print("1")
+    print("-"*80)
+
+    # print(f"req.options: {req.options}")
     opts = merge_prompt_options(defaults, req.options)
-    # q = req.q
+    # print(f"opts in rag_new #1: {opts}")
     q = req.q
-    print("3")
+    # print("3")
 
     # 1) Retrieve
     hits = S.retriever.search(q)
 
-    #print("="*20, flush = True)
-    #print(f"in rag_new hits: {hits}")
-    #print("="*20, flush = True)
-
     # 2) build prompts
-    # opts = PromptOptions(language="en", style="steps", max_context_chars=4000, cite=True)
-    opts = merge_prompt_options(defaults, req.options)
-
     system, user = build_prompts(q, hits, opts)
-
-    system, user = build_prompts(q, hits)
+    # system, user = build_prompts(q, hits)
     msgs = S.llm.make_messages(user=user, system=system)
+
+    print(f"Returned form model: \n\n{msgs}")
 
     # 3) Stream + Postprocessing
     def gen() -> Iterable[bytes]:
