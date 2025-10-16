@@ -1,6 +1,7 @@
 # src/rag/server.py
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from typing import Iterable
 import yaml
 from contextlib import asynccontextmanager
@@ -82,6 +83,23 @@ async def lifespan(app: FastAPI):
 
 # --- FastAPI app ---
 app = FastAPI(lifespan=lifespan)
+
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://0.0.0.0:3000",
+    "http://[::1]:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,                 # oder ["*"] für Dev (siehe Hinweis unten)
+    allow_origin_regex=r"https?://localhost(:\d+)?",
+    allow_credentials=True,
+    allow_methods=["*"],                   # wichtig für OPTIONS/POST
+    allow_headers=["*"],                   # wichtig für Content-Type: application/json
+    expose_headers=["Content-Type"],       # optional; bei Streaming/Debug hilfreich
+)
 
 @app.get("/health")
 def health():

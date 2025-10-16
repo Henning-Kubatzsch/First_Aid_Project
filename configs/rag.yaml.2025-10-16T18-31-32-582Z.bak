@@ -3,7 +3,7 @@
 llm: {}
 
 prompt:
-  language: de
+  language: en
   style: qa
   max_context_chars: 3000
   cite: false

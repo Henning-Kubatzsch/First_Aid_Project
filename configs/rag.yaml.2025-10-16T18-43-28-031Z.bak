@@ -1,10 +1,11 @@
 # Centra settings: paths, chunck size/overlap, top-k, model paths, prompt template
 
-llm: {}
+llm:
+  decoding: {}
 
 prompt:
-  language: de
-  style: qa
+  language: en # en | de
+  style: qa # steps | qa
   max_context_chars: 3000
   cite: false
   require_citations: false
