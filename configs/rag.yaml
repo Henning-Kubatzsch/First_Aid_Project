@@ -1,27 +1,22 @@
-# Centra settings: paths, chunck size/overlap, top-k, model paths, prompt template
-
 llm:
-  model_path: "models/qwen2.5-3b-instruct-q4_k_m.gguf"    # your file
-  family: "qwen"                                          # one of: qwen2 | llama3 | phi3 | mistral
-  n_ctx: 2048 #4096                                       # context window tokens
-  n_gpu_layers: -1                                        # -1 = try to offload all layers to Metal
+  model_path: models/qwen2.5-3b-instruct-q4_k_m.gguf
+  family: qwen
+  n_ctx: 2048
+  n_gpu_layers: -1
   n_threads: 8
-  n_batch: 256                                            # CPU threads for residual work (os.cpu_count() is fine)
+  n_batch: 256
   seed: 42
-  temperature: 0.1 # 0.7 # 0.2                                  # lower = more deterministic
+  temperature: 0.4
   top_p: 0.9
-  repeat_penalty: 1.1                                     # prevents loops
-  max_tokens: 512 #80  #256                               # tokens to generate
-  # stop: ["</s>", "<|endoftext|>"]                       # common stop tokens (family-specific ones come from template)
-  use_mmap: true
-  use_mlock: true
-
+  repeat_penalty: 1.1
+  max_tokens: 512
+  use_mmap: false
+  use_mlock: false
 prompt:
-  language: en         # en | de
-  style: qa         # steps | qa
+  language: en
+  style: qa
   max_context_chars: 3000
   cite: false
   require_citations: false
-
 retriever:
   k: 1

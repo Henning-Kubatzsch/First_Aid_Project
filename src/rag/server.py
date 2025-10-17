@@ -108,6 +108,7 @@ def health():
 
 @app.post("/rag_new")
 def rag_new(req: RagRequest, defaults: PromptOptions = Depends(get_prompt_defaults)):
+
     print("-"*80)
 
     # print(f"req.options: {req.options}")
