@@ -106,7 +106,52 @@ def health():
     """Simple health check endpoint."""
     return {"ok": True}
 
-@app.post("/rag_new")
+@app.post("/rag_ui")
+def rag_new(req: RagRequest, defaults: PromptOptions = Depends(get_prompt_defaults)):
+
+    print("-"*80)
+
+    opts = get_prompt_defaults()
+    # print(f"opts in rag_new #1: {opts}")
+    q = req.q
+    # print("3")
+
+    # 1) Retrieve
+    hits = S.retriever.search(q)
+
+    print(f"count hits: {len(hits)}")
+
+    # 2) build prompts
+    system, user = build_prompts(q, hits, opts)
+
+    print(f"user: {user}")
+
+    # system, user = build_prompts(q, hits)
+    msgs = S.llm.make_messages(user=user, system=system)
+
+    print(f"\n\nReturned from make_messages: {msgs}\n\n")
+
+    # 3) Stream + Postprocessing
+    def gen() -> Iterable[bytes]:
+        buf = []
+        try:
+            for tok in S.llm.chat_stream(
+                msgs, max_tokens=256, temperature=0.2):
+                buf.append(tok)
+                yield tok.encode("utf-8")  # live stream
+        except Exception as e:
+            yield f"\n\n[stream-error] {type(e).__name__}: {e}\n".encode("utf-8")
+        finally:
+            # optional: final „clean“ Ausgabe in Logs
+            try:
+                final = "".join(buf)
+                clean = postprocess_answer(final, num_sources=len(hits), opts=opts)
+                print("\n--- POSTPROCESSED ---\n", clean)
+            except Exception:
+                pass
+    return StreamingResponse(gen(), media_type="text/plain; charset=utf-8")
+
+@app.post("/rag_po")
 def rag_new(req: RagRequest, defaults: PromptOptions = Depends(get_prompt_defaults)):
 
     print("-"*80)
