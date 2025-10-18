@@ -49,16 +49,9 @@ def build_prompts(
     Returns (system, user) strings. `hits` are the retriever documents:
     [{'text': str, 'meta': {...}, 'score': float}, ...]
     """
-    opts = opts or PromptOptions()
 
-    # print(f"hits: {hits}")
-
-    # print(f"\n\nopts in build_prompts: {opts}\n\n")
-    # print(f"max_context_chars: {opts.max_context_chars}")
-    # 1) Context + bibliography
+      # 1) Context + bibliography
     context, bib = _build_context_and_bib(hits, max_chars=opts.max_context_chars)
-
-    # print(f"\n\ncontext after _build_context: {context}\n\n")
 
     # 2) System message
     if opts.cite == False:
@@ -153,10 +146,10 @@ def _system_prompt_for_citing(opts: PromptOptions, bib: str) -> str:
         rules = textwrap.dedent(
         f"""
 
-        You are a concise, safety-first assistant aligned with ERC/first-aid guidelines.
-        Answer briefly and correctly with clear steps. If unsure, say so explicitly.
-        When context citations exist, cite [1], [2], … matching the source list.
-        Sources:
+       Du bist ein präziser, sicherheitsorientierter Assistent, der sich an ERC/Erste-Hilfe-Richtlinien hält.
+        Antworte kurz und korrekt mit klaren Schritten. Bei Unsicherheit weise explizit darauf hin.
+        Falls Kontextquellen vorliegen, zitiere sie als [1], [2], … passend zur Quellenliste.
+        Quellen:
 
         {bib}
 

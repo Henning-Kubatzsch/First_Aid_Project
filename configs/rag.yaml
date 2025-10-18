@@ -16,7 +16,7 @@ prompt:
   language: en
   style: qa
   max_context_chars: 3000
-  cite: false
+  cite: true
   require_citations: false
 retriever:
-  k: 1
+  k: 4

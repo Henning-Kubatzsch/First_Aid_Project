@@ -116,7 +116,6 @@ def rag_ui(req: RagRequest):
     print("-"*80)
 
     opts = get_prompt_defaults()
-    # print(f"opts in rag_new #1: {opts}")
     q = req.q
     # print("3")
 
@@ -142,6 +141,7 @@ def rag_ui(req: RagRequest):
             for tok in S.llm.chat_stream(
                 msgs, max_tokens=256, temperature=0.2):
                 buf.append(tok)
+                # this is the part why we get repeating output
                 yield tok.encode("utf-8")  # live stream
         except Exception as e:
             yield f"\n\n[stream-error] {type(e).__name__}: {e}\n".encode("utf-8")
@@ -153,6 +153,7 @@ def rag_ui(req: RagRequest):
                 print("\n--- POSTPROCESSED ---\n", clean)
             except Exception:
                 pass
+    # print("------------before POSTPTOCESSED")
     return StreamingResponse(gen(), media_type="text/plain; charset=utf-8")
 
 @app.post("/rag_po") 
@@ -160,11 +161,8 @@ def rag_po(req: RagRequest, defaults: PromptOptions = Depends(get_prompt_default
 
     print("-"*80)
 
-    # print(f"req.options: {req.options}")
     opts = merge_prompt_options(defaults, req.options)
-    # print(f"opts in rag_new #1: {opts}")
     q = req.q
-    # print("3")
 
     # 1) Retrieve
     hits = S.retriever.search(q)
