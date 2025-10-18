@@ -53,12 +53,12 @@ def build_prompts(
 
     # print(f"hits: {hits}")
 
-    print(f"\n\nopts in build_prompts: {opts}\n\n")
+    # print(f"\n\nopts in build_prompts: {opts}\n\n")
     # print(f"max_context_chars: {opts.max_context_chars}")
     # 1) Context + bibliography
     context, bib = _build_context_and_bib(hits, max_chars=opts.max_context_chars)
 
-    print(f"\n\ncontext after _build_context: {context}\n\n")
+    # print(f"\n\ncontext after _build_context: {context}\n\n")
 
     # 2) System message
     if opts.cite == False:
@@ -115,7 +115,7 @@ def _build_context_and_bib(hits: List[Dict], max_chars: int) -> Tuple[str, str]:
     total = 0
     for i, h in enumerate(hits, start=1):    
         txt = _squash(h.get("text", ""), hard_trim=1200)
-        print(f"iteration {i}, txt: {txt}")
+        # print(f"iteration {i}, txt: {txt}")
         entry = f"[{i}] {txt}"
         if total + len(entry) > max_chars:
             break
@@ -123,7 +123,7 @@ def _build_context_and_bib(hits: List[Dict], max_chars: int) -> Tuple[str, str]:
         total += len(entry)
     context = "\n\n".join(cleaned)
 
-    print(f"\n\ncontext in _build_context: {context}\n\n")
+    # print(f"\n\ncontext in _build_context: {context}\n\n")
 
     bib_lines = []
     for i, h in enumerate(hits, start=1):

@@ -17,7 +17,7 @@ def _load_yaml(path: Path) -> dict:
 def get_settings(cfg_path: str = "configs/rag.yaml") -> Settings:
     data = _load_yaml(Path(cfg_path))
     p = (data or {}).get("prompt", {})
-    print(f"p: {p}")
+    # print(f"p: {p}")
     prompt = PromptOptions(
         language = p.get("language", "en"),
         style = p.get("style", "steps"),
@@ -25,6 +25,6 @@ def get_settings(cfg_path: str = "configs/rag.yaml") -> Settings:
         cite = p.get("cite", True),
         require_citations = p.get("require_citations", True)
     )
-    print(f"prompt from settings: {prompt}")
+    # print(f"prompt from settings: {prompt}")
     return Settings(prompt=prompt)
 

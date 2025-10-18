@@ -107,8 +107,12 @@ def health():
     return {"ok": True}
 
 @app.post("/rag_ui")
-def rag_new(req: RagRequest, defaults: PromptOptions = Depends(get_prompt_defaults)):
+# def rag_ui(req: RagRequest, defaults: PromptOptions = Depends(get_prompt_defaults)):
+def rag_ui(req: RagRequest):
 
+
+    print("-"*80)
+    print("in rag_ui")
     print("-"*80)
 
     opts = get_prompt_defaults()
@@ -119,17 +123,17 @@ def rag_new(req: RagRequest, defaults: PromptOptions = Depends(get_prompt_defaul
     # 1) Retrieve
     hits = S.retriever.search(q)
 
-    print(f"count hits: {len(hits)}")
+    # print(f"count hits: {len(hits)}")
 
     # 2) build prompts
     system, user = build_prompts(q, hits, opts)
 
-    print(f"user: {user}")
+    # print(f"user: {user}")
 
     # system, user = build_prompts(q, hits)
     msgs = S.llm.make_messages(user=user, system=system)
 
-    print(f"\n\nReturned from make_messages: {msgs}\n\n")
+    # print(f"\n\nReturned from make_messages: {msgs}\n\n")
 
     # 3) Stream + Postprocessing
     def gen() -> Iterable[bytes]:
@@ -151,8 +155,8 @@ def rag_new(req: RagRequest, defaults: PromptOptions = Depends(get_prompt_defaul
                 pass
     return StreamingResponse(gen(), media_type="text/plain; charset=utf-8")
 
-@app.post("/rag_po")
-def rag_new(req: RagRequest, defaults: PromptOptions = Depends(get_prompt_defaults)):
+@app.post("/rag_po") 
+def rag_po(req: RagRequest, defaults: PromptOptions = Depends(get_prompt_defaults)):
 
     print("-"*80)
 
