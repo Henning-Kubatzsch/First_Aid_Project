@@ -122,6 +122,8 @@ def rag_ui(req: RagRequest):
     # 1) Retrieve
     hits = S.retriever.search(q)
 
+    print(f"hits: {len(hits)}")
+
     # print(f"count hits: {len(hits)}")
 
     # 2) build prompts

@@ -51,15 +51,20 @@ class CustomChunker(Chunker):
         sections_dict = {}
         for i, item1 in enumerate(section_list):
             questions = []
-            tasks = []
+            tasks = ""
             length = len(section_list)
             section_headers = []
             for j, item2 in enumerate(section_list[i]):
                 if re.findall(r'\:\Z', item2):
                     section_headers.append(j)
+
+            #for h in item1[(section_headers[1]+1)]:
+            #    tasks.join(h)
+
             sections_dict[i] = {
                 'questions' : item1[1:section_headers[1]],
                 'tasks' : item1[(section_headers[1]+1):]
+                #'tasks' : tasks
             }
         return sections_dict  
 
@@ -69,9 +74,12 @@ class CustomChunker(Chunker):
         for i in range(len(sections_dict)):
             for j, item in enumerate(sections_dict[i]['questions']):
                 cid = hashlib.sha1(item.encode("utf-8")).hexdigest()[:16]
-                out = {"id" : cid, "question": item, "text" : sections_dict[i]["tasks"], "meta" : dict(meta)}
+                text = " ".join(sections_dict[i]["tasks"])
+                # out = {"id" : cid, "question": item, "text" : sections_dict[i]["tasks"], "meta" : dict(meta)}
+                out = {"id" : cid, "question": item, "text" : text, "meta" : dict(meta)}
+
                 chunks.append(out)
-        return chunks
+        return chunks 
                     
 
     # =====================

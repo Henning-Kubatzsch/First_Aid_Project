@@ -82,6 +82,7 @@ def postprocess_answer(
 
     # Enforce list (when using steps style)
     if opts.style == "steps" and not re.search(r"^\s*1[.)]", a, flags=re.M):
+        print("septs is selected")
         a = _force_numbered_list(a)
 
     # Clean citations: only allow [1..num_sources]
@@ -104,6 +105,9 @@ def _build_context_and_bib(hits: List[Dict], max_chars: int) -> Tuple[str, str]:
     """
     Trims context to a character budget and builds a short bibliography.
     """
+    print("-"*80)
+    print(f"\n\nhits: \n\n{hits}\n\n")
+
     cleaned = []
     total = 0
     for i, h in enumerate(hits, start=1):    
@@ -115,6 +119,8 @@ def _build_context_and_bib(hits: List[Dict], max_chars: int) -> Tuple[str, str]:
         cleaned.append(entry)
         total += len(entry)
     context = "\n\n".join(cleaned)
+
+    print(f"\n\ncontext: \n\n{context}\n\n")
 
     # print(f"\n\ncontext in _build_context: {context}\n\n")
 
@@ -226,14 +232,25 @@ def _squash(s: str, hard_trim: int = 1200) -> str:
         return s[: hard_trim - 1].rsplit(" ", 1)[0] + "…"
     return s
 
+#def _force_numbered_list(s: str) -> str:
+#    # Split into meaningful sentences/lines and number them
+#    parts = [p.strip(" -•\t") for p in re.split(r'\.\s+|\n', s) if p.strip()]
+#    parts = [p for p in parts if len(p) > 0]
+#    print("-" * 80)
+#    print(f"\nparts:\n\n{parts}\n\n")
+#    if not parts:
+#        return s
+#    enumerated = "\n".join(f"{i+1}. {p}" for i, p in enumerate(parts))
+
 def _force_numbered_list(s: str) -> str:
-    # Split into meaningful sentences/lines and number them
     parts = [p.strip(" -•\t") for p in re.split(r'\.\s+|\n', s) if p.strip()]
     parts = [p for p in parts if len(p) > 0]
     if not parts:
         return s
+    return "\n".join(f"{i+1}. {p}" for i, p in enumerate(parts))  # ✅ Richtig
+
     
-    return "\n".join(f"{i+1}. {p}" for i, p in enumerate(parts)).join(f" length: {len(parts)}")
+    return enumerated.join(f" length: {len(parts)}")
 
 def _clamp_citations(s: str, max_n: int) -> str:
     # Only allow citations [1..max_n]; drop or reduce others

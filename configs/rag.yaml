@@ -14,9 +14,9 @@ llm:
   use_mlock: false
 prompt:
   language: en
-  style: qa
+  style: steps
   max_context_chars: 3000
-  cite: true
+  cite: false
   require_citations: false
 retriever:
-  k: 4
+  k: 3
